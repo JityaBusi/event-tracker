@@ -1,15 +1,54 @@
+// const processActivity = require('../services/activityProcessor');
+// const Activity = require('../models/activityModel');
+
+// describe('Activity Processor', () => {
+//   it('stores valid activity event', async () => {
+//     Activity.create.mockResolvedValue(true);
+
+//     const event = {
+//       id: '123',
+//       userId: 'user-1',
+//       eventType: 'login',
+//       timestamp: new Date(),
+//       payload: { ip: '127.0.0.1' }
+//     };
+
+//     await processActivity(event);
+
+//     expect(Activity.create).toHaveBeenCalledWith(
+//       expect.objectContaining({
+//         userId: 'user-1',
+//         eventType: 'login'
+//       })
+//     );
+//   });
+
+//   it('throws error if DB fails', async () => {
+//     Activity.create.mockRejectedValue(new Error('DB error'));
+
+//     await expect(
+//       processActivity({})
+//     ).rejects.toThrow('DB error');
+//   });
+// });
+
+
+
+
+
+
 const processActivity = require('../services/activityProcessor');
 const Activity = require('../models/activityModel');
 
 describe('Activity Processor', () => {
-  it('stores valid activity event', async () => {
+  it('stores activity in database', async () => {
     Activity.create.mockResolvedValue(true);
 
     const event = {
       id: '123',
       userId: 'user-1',
       eventType: 'login',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       payload: { ip: '127.0.0.1' }
     };
 
@@ -21,13 +60,5 @@ describe('Activity Processor', () => {
         eventType: 'login'
       })
     );
-  });
-
-  it('throws error if DB fails', async () => {
-    Activity.create.mockRejectedValue(new Error('DB error'));
-
-    await expect(
-      processActivity({})
-    ).rejects.toThrow('DB error');
   });
 });

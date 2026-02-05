@@ -1,22 +1,25 @@
 const amqp = require('amqplib');
-const mongoose = require('mongoose');
-const Activity = require('./models/Activity');
+const processActivity = require('./services/activityProcessor');
 
-(async () => {
-  await mongoose.connect(process.env.DATABASE_URL);
+const QUEUE = 'user_activities';
 
+async function startWorker() {
   const conn = await amqp.connect(process.env.RABBITMQ_URL);
   const channel = await conn.createChannel();
-  await channel.assertQueue('user_activities', { durable: true });
+  await channel.assertQueue(QUEUE, { durable: true });
 
-  channel.consume('user_activities', async (msg) => {
+  channel.consume(QUEUE, async (msg) => {
+    if (!msg) return;
+
     try {
-      const data = JSON.parse(msg.content.toString());
-      await Activity.create(data);
+      const event = JSON.parse(msg.content.toString());
+      await processActivity(event);
       channel.ack(msg);
     } catch (err) {
-      console.error(err);
+      console.error('Processing failed', err);
       channel.nack(msg, false, true); // requeue
     }
   });
-})();
+}
+
+module.exports = { startWorker };

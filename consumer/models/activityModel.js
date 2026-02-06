@@ -1,15 +1,18 @@
 const mongoose = require('mongoose');
 
-const schema = new mongoose.Schema({
-  id: { type: String, unique: true },
-  userId: String,
-  eventType: String,
-  timestamp: Date,
-  processedAt: { type: Date, default: Date.now },
-  payload: mongoose.Schema.Types.Mixed
-}, { timestamps: true });
+const ActivitySchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    eventType: { type: String, required: true },
+    userId: { type: String, required: true },
+    timestamp: { type: Date, required: true },
+    payload: { type: Object, required: true }
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Activity', schema);
+module.exports = mongoose.model('Activity', ActivitySchema);
+
 
 
 

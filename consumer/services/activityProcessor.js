@@ -1,31 +1,34 @@
-// const Activity = require('../models/activityModel');
+const amqp = require('amqplib');
 
-// async function processActivity(event) {
-//   return Activity.create({
-//     id: event.id,
-//     userId: event.userId,
-//     eventType: event.eventType,
-//     timestamp: event.timestamp,
-//     payload: event.payload,
-//   });
-// }
+const RABBIT_URL = 'amqp://rabbitmq:5672';
+const QUEUE = 'activities';
 
-// module.exports = processActivity;
-
-
-
-
-const Activity = require('../models/activityModel');
-
-async function processActivity(event) {
-  return Activity.create({
-    id: event.id,
-    userId: event.userId,
-    eventType: event.eventType,
-    timestamp: new Date(event.timestamp),
-    payload: event.payload,
-    processedAt: new Date()
-  });
+async function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-module.exports = processActivity;
+async function connectWithRetry(retries = 10) {
+  try {
+    const connection = await amqp.connect(RABBIT_URL);
+    console.log('Connected to RabbitMQ');
+    return connection;
+  } catch (err) {
+    if (retries === 0) {
+      throw err;
+    }
+    console.log('RabbitMQ not ready, retrying in 3s...');
+    await wait(3000);
+    return connectWithRetry(retries - 1);
+  }
+}
+
+module.exports = async function connectRabbit() {
+  const connection = await connectWithRetry();
+  const channel = await connection.createChannel();
+
+  await channel.assertQueue(QUEUE, {
+    durable: true
+  });
+
+  return channel;
+};

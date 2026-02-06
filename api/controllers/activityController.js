@@ -1,29 +1,50 @@
 const Joi = require('joi');
-const { v4: uuid } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const publish = require('../services/rabbitmq');
 
-const schema = Joi.object({
+/**
+ * Validation schema for incoming activity events
+ * Matches assignment requirements exactly
+ */
+const activitySchema = Joi.object({
   userId: Joi.string().required(),
   eventType: Joi.string().min(1).required(),
-  timestamp: Joi.date().iso().required(),
+  timestamp: Joi.string().isoDate().required(),
   payload: Joi.object().required()
 });
 
 exports.createActivity = async (req, res) => {
-  const { error, value } = schema.validate(req.body);
+  // Validate request body
+  const { error, value } = activitySchema.validate(req.body);
+
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({
+      error: error.details[0].message
+    });
   }
 
+  // Construct event message
   const event = {
-    id: uuid(),
-    ...value
+    id: uuidv4(),
+    userId: value.userId,
+    eventType: value.eventType,
+    timestamp: value.timestamp,
+    payload: value.payload
   };
 
   try {
+    // Publish event to RabbitMQ
     await publish(event);
-    return res.status(202).json({ message: 'Event accepted' });
+
+    // Asynchronous acceptance
+    return res.status(202).json({
+      message: 'Activity event accepted'
+    });
   } catch (err) {
-    return res.status(500).json({ error: 'Queue unavailable' });
+    console.error('RabbitMQ publish failed:', err.message);
+
+    return res.status(500).json({
+      error: 'Failed to enqueue activity event'
+    });
   }
 };

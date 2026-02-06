@@ -28,4 +28,15 @@ async function startWorker() {
   });
 }
 
+const connectWithRetry = require('./services/rabbitmq');
+
+connectWithRetry().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+
+
 startWorker().catch(console.error);
+
+
+
